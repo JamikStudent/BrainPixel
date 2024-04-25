@@ -9,11 +9,11 @@ class User(models.Model):
     tips_first_type = models.IntegerField(default=0)  # Количество подсказок первого типа у пользователя
     tips_second_type = models.IntegerField(default=0)  # Количество подсказок второго типа у пользователя
 
-    #def __str__(self):
-    #    """
-    #    Возвращает строковое представление объекта пользователя
-    #    """
-    #    return self.username
+    def __str__(self):
+        """
+        Возвращает строковое представление объекта пользователя
+        """
+        return self.username
 
     def SubstractClueFirstType(self):
         """
