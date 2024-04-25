@@ -1,9 +1,12 @@
 from rest_framework import status, generics
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import User, Topic
+from .models import User, Topic, Answer
 from .serializers import UserSerializer, TopicSerializer
 from .utils import OneCorrectAnswer, FiftyFiftyAnswer
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
+from rest_framework.renderers import JSONRenderer
 
 # Представление для получения списка пользователей
 class UserAPIView(generics.ListAPIView):
@@ -12,10 +15,6 @@ class UserAPIView(generics.ListAPIView):
 
     # Определение класса сериализатора для преобразования данных пользователя в JSON
     serializer_class = UserSerializer
-
-    def get(self, request, *args, **kwargs):
-        # Вызов метода list(), для обработки GET запроса и возврата списка пользователей в формате JSON
-        return self.list(request, *args, **kwargs)
 
 # Представление для создания нового пользователя
 @api_view(['POST'])
@@ -133,3 +132,69 @@ def use_hints_view(request):
 class TopicList(generics.ListAPIView):
     queryset = Topic.objects.all()
     serializer_class = TopicSerializer
+
+@api_view(['POST', 'GET'])
+def submit_answers(request):
+    user = request.user
+    data = request.data.get('answers')
+    if not data:
+        return Response({'error': 'No answers provided'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Обработка данных ответов и сохранение их в базу данных
+    for answer_data in data:
+        question_id = answer_data.get('question_id')
+        answer_text = answer_data.get('answer_text')
+
+        # Проверка наличия данных ответов
+        if question_id is None or answer_text is None:
+            return Response({'error': 'Invalid answer format'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Создание и сохранение экземпляра модели Answer
+        answer = Answer(user=user, question_id=question_id, text=answer_text)
+        answer.save()
+
+    return Response({'success': 'Answers submitted successfully'}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def evaluate_answers(request):
+    user = request.user  # Получение пользователя из запроса
+    user_answers = request.data.get('answers')  # получение ответов пользователя из запроса
+    if not user_answers:
+        return Response({'error': 'No answers provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Получение правильных ответов из базы данных
+    correct_answers = Answer.objects.filter(is_correct=True)
+    
+    # Инициализация переменной для хранения количества баллов пользователя
+    user_score = 0
+
+    # Сравнение ответов пользователя с правильными ответами
+    for user_answer in user_answers:
+        # Проверка наличия данных ответов
+        if 'question_id' not in user_answer or 'answer_text' not in user_answer:
+            return Response({'error': 'Invalid answer format'}, status=status.HTTP_400_BAD_REQUEST)
+
+        question_id = user_answer['question_id']
+        answer_text = user_answer['answer_text']
+
+        # Проверка правильности ответа пользователя
+        if correct_answers.filter(question_id=question_id, text=answer_text).exists():
+            user_score += 1  # Увеличение баллов при правильном ответе
+
+    return Response({'user_score': user_score}, status=status.HTTP_200_OK)
+
+@api_view(['POST', 'GET'])
+def authenticate_user(request):
+    data = request.data
+    username = data.get('username')
+    password = data.get('password')
+    if not username or not password:
+        return Response({'error': 'Username or password is missing'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    user = authenticate(username=username, password=password)
+    if not user:
+        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+    
+    # Генерация или получение токена аутентификации
+    token, created = Token.objects.get_or_create(user=user)
+    return Response({'token': token.key}, status=status.HTTP_200_OK)

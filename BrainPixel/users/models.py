@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.auth.models import User as DjangoUser
+from django.contrib.auth import get_user_model
 
 # Модель пользователя
 class User(models.Model):
@@ -19,6 +21,13 @@ class User(models.Model):
         """
         self.tips_first_type -= 1  # Уменьшаем количество доступных подсказок первого типа на 1
         self.save()  # Сохраняем изменения
+    
+    def SubstractClueSecondType(self):
+        """
+        Вычитает одну подсказку второго типа из общего количества у пользователя.
+        """
+        self.tips_second_type -= 1  # Уменьшаем количество доступных подсказок второго типа на 1
+        self.save()  # Сохраняем изменения
 
 class Topic(models.Model):
     title = models.CharField(max_length=255)
@@ -27,8 +36,8 @@ class Question(models.Model):
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
     text = models.TextField()
 
-# Модель ответа
 class Answer(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)  # Using default user ID 1 as a placeholder
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     text = models.CharField(max_length=255)
     is_correct = models.BooleanField(default=False)
