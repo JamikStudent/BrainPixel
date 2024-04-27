@@ -3,6 +3,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from users.models import User
 from .utils import OneCorrectAnswer, FiftyFiftyAnswer
+
 class UseHintsViewTestCase(TestCase):
     def setUp(self):
         self.client = Client()

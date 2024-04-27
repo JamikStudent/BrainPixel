@@ -56,7 +56,7 @@ def check_balance(request, user_id):
     return Response({'balance': user.points})
 
 # Представление для покупки подсказок
-@api_view(['GET', 'POST'])
+@api_view(['GET'])
 def buy_tips(request, user_id, type_of_tip):
     try:
         # Получаем пользователя по его идентификатору из базы данных
@@ -98,7 +98,7 @@ def buy_tips(request, user_id, type_of_tip):
     })
 
 # Представление для использования подсказок
-@api_view(['GET', 'POST'])
+@api_view(['GET'])
 def use_hints_view(request):
     # Получаем данные ответов из запроса
     answers_data = request.data.get('answers')
@@ -133,7 +133,7 @@ class TopicList(generics.ListAPIView):
     queryset = Topic.objects.all()
     serializer_class = TopicSerializer
 
-@api_view(['POST', 'GET'])
+@api_view(['POST'])
 def submit_answers(request):
     user = request.user
     data = request.data.get('answers')
@@ -182,19 +182,3 @@ def evaluate_answers(request):
             user_score += 1  # Увеличение баллов при правильном ответе
 
     return Response({'user_score': user_score}, status=status.HTTP_200_OK)
-
-@api_view(['POST', 'GET'])
-def authenticate_user(request):
-    data = request.data
-    username = data.get('username')
-    password = data.get('password')
-    if not username or not password:
-        return Response({'error': 'Username or password is missing'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    user = authenticate(username=username, password=password)
-    if not user:
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
-    
-    # Генерация или получение токена аутентификации
-    token, created = Token.objects.get_or_create(user=user)
-    return Response({'token': token.key}, status=status.HTTP_200_OK)

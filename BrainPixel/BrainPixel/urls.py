@@ -27,7 +27,6 @@ urlpatterns = [
     path('use-hints/', views.use_hints_view, name='use_hints'),
     path('topics/', views.TopicList.as_view(), name='topic-list'),
     path('submit_answers/', views.submit_answers, name='submit_answers'),
-    #path('authenticate_user/', views.authenticate_user, name='authenticate_user'),
     path('auth/', include('djoser.urls')),
     re_path(r'^auth/', include('djoser.urls.authtoken')),
 ]

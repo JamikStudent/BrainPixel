@@ -5,7 +5,8 @@ from django.contrib.auth import get_user_model
 # Модель пользователя
 class User(models.Model):
     username = models.CharField(max_length=100)  # Имя пользователя
-    points = models.IntegerField(default=0)  # Количество очков пользователя
+    user_save_topic = models.IntegerField(default=0)
+    coin = models.IntegerField(default=0)  # Количество очков пользователя
     tips_first_type = models.IntegerField(default=0)  # Количество подсказок первого типа у пользователя
     tips_second_type = models.IntegerField(default=0)  # Количество подсказок второго типа у пользователя
 
@@ -30,11 +31,17 @@ class User(models.Model):
         self.save()  # Сохраняем изменения
 
 class Topic(models.Model):
-    title = models.CharField(max_length=255)
+    topic_title = models.CharField(max_length=255)
+    topic_info = models.CharField(max_length=255)
+    topic_question_number = models.IntegerField(default=0)
 
 class Question(models.Model):
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
-    text = models.TextField()
+    question_text = models.CharField(max_length=255)
+    answer_true = models.CharField(max_length=255)
+    answer_false_1 = models.CharField(max_length=255)
+    answer_false_2 = models.CharField(max_length=255)
+    answer_false_3 = models.CharField(max_length=255)
 
 class Answer(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
