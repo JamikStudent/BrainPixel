@@ -4,7 +4,7 @@ from .models import *
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'points', 'tips_first_type', 'tips_second_type']
+        fields = ['id', 'username', 'coin', 'tips_first_type', 'tips_second_type', 'user_save_topic', 'skin', 'skin_b', 'skin_p', 'skin_g']
 
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
