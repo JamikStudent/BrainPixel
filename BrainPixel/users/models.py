@@ -10,7 +10,7 @@ class User(models.Model):
     tips_first_type = models.IntegerField(default=0)  # Количество подсказок первого типа у пользователя
     tips_second_type = models.IntegerField(default=0)  # Количество подсказок второго типа у пользователя
     skin = models.CharField(max_length=10, default='blue')  # Тема приложения пользователя
-    skin_b = models.BooleanField(default=True)  # Купил ли пользователь синюю тему
+    skin_b = models.BooleanField(default=True)  # Купил ли пользователь тему
     skin_p = models.BooleanField(default=False)
     skin_g = models.BooleanField(default=False)
 

@@ -226,7 +226,7 @@ def evaluate_answers(request):
     # Инициализация переменной для хранения количества баллов пользователя
     user_score = 0
 
-    # Сравнение ответов пользователя с правильными ответами
+    # Сравнение ответов пользователя с ответами
     for user_answer in user_answers:
         # Проверка наличия данных ответов
         if 'question_id' not in user_answer or 'answer_text' not in user_answer:

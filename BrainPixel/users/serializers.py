@@ -4,7 +4,7 @@ from .models import *
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'coin', 'tips_first_type', 'tips_second_type', 'user_save_topic', 'skin', 'skin_b', 'skin_p', 'skin_g']
+        fields = '__all__'
 
 class AnswerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -16,11 +16,11 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ['id', 'text', 'answers']
+        fields = '__all__'
 
 class TopicSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Topic
-        fields = ['id', 'title', 'questions']
+        fields = '__all__'

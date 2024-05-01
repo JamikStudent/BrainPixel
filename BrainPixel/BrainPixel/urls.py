@@ -28,7 +28,7 @@ urlpatterns = [
     path('users/<int:user_id>/skin_info/', views.user_skin_info, name='user_skin_info'),
     path('users/<int:user_id>/change_skin/<str:skin_name>/', views.change_skin, name='change_skin'),
     path('use-hints/', views.use_hints_view, name='use_hints'),
-    path('topics/', views.TopicList.as_view(), name='topic-list'),
+    path('topics/', views.TopicList.as_view(), name='topic-list'), #
     path('submit_answers/', views.submit_answers, name='submit_answers'),
     path('auth/', include('djoser.urls')),
     re_path(r'^auth/', include('djoser.urls.authtoken')),
