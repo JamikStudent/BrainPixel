@@ -12,15 +12,13 @@ class AnswerSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class QuestionSerializer(serializers.ModelSerializer):
-    answers = AnswerSerializer(many=True, read_only=True)
-
     class Meta:
         model = Question
-        fields = ['id', 'text', 'answers']
+        fields = '__all__'
 
 class TopicSerializer(serializers.ModelSerializer):
-    questions = QuestionSerializer(many=True, read_only=True)
+    #questions = QuestionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Topic
-        fields = ['id', 'title', 'questions']
+        fields = ['id', 'topic_title', 'topic_info', 'topic_question_number']
