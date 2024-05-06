@@ -1,8 +1,8 @@
 from rest_framework import status, generics
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import User, Topic, Answer
-from .serializers import UserSerializer, TopicSerializer
+from .models import *
+from .serializers import *
 from .utils import OneCorrectAnswer, FiftyFiftyAnswer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
@@ -191,27 +191,52 @@ class TopicList(generics.ListAPIView):
     queryset = Topic.objects.all()
     serializer_class = TopicSerializer
 
+class QuestionListAPIView(generics.ListAPIView):
+    queryset = Question.objects.all()
+    serializer_class = QuestionSerializer
+
+@api_view(['POST'])
+def bonus_coin(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    user.coin += 50
+    user.save()
+
+    return Response({
+        'message': 'Bonus points received successfully',
+        'balance': user.coin
+    })
+
 @api_view(['POST'])
 def submit_answers(request):
     user = request.user
-    data = request.data.get('answers')
-    if not data:
-        return Response({'error': 'No answers provided'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    # Обработка данных ответов и сохранение их в базу данных
-    for answer_data in data:
-        question_id = answer_data.get('question_id')
-        answer_text = answer_data.get('answer_text')
+    data = request.data
 
-        # Проверка наличия данных ответов
-        if question_id is None or answer_text is None:
-            return Response({'error': 'Invalid answer format'}, status=status.HTTP_400_BAD_REQUEST)
+    total_questions = len(data)
+    correct_answers = 0
 
-        # Создание и сохранение экземпляра модели Answer
-        answer = Answer(user=user, question_id=question_id, text=answer_text)
-        answer.save()
+    for question_id, answer_text in data.items():
+        question = Question.objects.get(id=question_id)
+        if question.answer_true == answer_text:
+            correct_answers += 1
+            is_correct = True
+        else:
+            is_correct = False
 
-    return Response({'success': 'Answers submitted successfully'}, status=status.HTTP_200_OK)
+        # Сохранение ответов
+        Answer.objects.create(user=user, question=question, text=answer_text, is_correct=is_correct)
+
+    score = (correct_answers / total_questions) * 100
+
+    if score < 50:
+        message = "Your score is less than 50 per. Do you want to restart the test?"
+    else:
+        message = "Congratulations! Your score is 50 per or higher."
+
+    return Response({"message": message, "score": score}, status=status.HTTP_200_OK)
 
 @api_view(['POST'])
 def evaluate_answers(request):
@@ -226,7 +251,7 @@ def evaluate_answers(request):
     # Инициализация переменной для хранения количества баллов пользователя
     user_score = 0
 
-    # Сравнение ответов пользователя с ответами
+    # Сравнение ответов пользователя с правильными ответами
     for user_answer in user_answers:
         # Проверка наличия данных ответов
         if 'question_id' not in user_answer or 'answer_text' not in user_answer:

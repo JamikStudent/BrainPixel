@@ -102,6 +102,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+PASSWORD_RESET_CONFIRM_URL = 'http://localhost:8000/reset-password/confirm/'
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
