@@ -7,6 +7,7 @@ from .utils import OneCorrectAnswer, FiftyFiftyAnswer
 from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
+from rest_framework.views import APIView
 
 # Представление для получения списка пользователей
 class UserAPIView(generics.ListAPIView):
@@ -195,6 +196,22 @@ class QuestionListAPIView(generics.ListAPIView):
     queryset = Question.objects.all()
     serializer_class = QuestionSerializer
 
+class TopicQuestionListAPIView(generics.ListAPIView):
+    serializer_class = QuestionSerializer
+
+    def get_queryset(self):
+        topic_id = self.kwargs['topic_id']
+        return Question.objects.filter(topic_id=topic_id)
+
+class TopicInfoAPIView(APIView):
+    def get(self, request, topic_id):
+        try:
+            topic = Topic.objects.get(pk=topic_id)
+            serializer = TopicSerializer(topic)
+            return Response(serializer.data)
+        except Topic.DoesNotExist:
+            return Response({'error': 'Topic does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
 @api_view(['POST'])
 def bonus_coin(request, user_id):
     try:
@@ -213,21 +230,25 @@ def bonus_coin(request, user_id):
 @api_view(['POST'])
 def submit_answers(request):
     user = request.user
-    data = request.data
+    data = request.data.get('answers')
+
+    if not data:
+        return Response({'error': 'No answers provided'}, status=status.HTTP_400_BAD_REQUEST)
 
     total_questions = len(data)
     correct_answers = 0
 
-    for question_id, answer_text in data.items():
-        question = Question.objects.get(id=question_id)
+    for answer in data:
+        question_id = answer.get('question_id')
+        answer_text = answer.get('answer_text')
+
+        try:
+            question = Question.objects.get(id=question_id)
+        except Question.DoesNotExist:
+            return Response({'error': f'Question with id {question_id} does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+
         if question.answer_true == answer_text:
             correct_answers += 1
-            is_correct = True
-        else:
-            is_correct = False
-
-        # Сохранение ответов
-        Answer.objects.create(user=user, question=question, text=answer_text, is_correct=is_correct)
 
     score = (correct_answers / total_questions) * 100
 
@@ -237,6 +258,7 @@ def submit_answers(request):
         message = "Congratulations! Your score is 50 per or higher."
 
     return Response({"message": message, "score": score}, status=status.HTTP_200_OK)
+
 
 @api_view(['POST'])
 def evaluate_answers(request):

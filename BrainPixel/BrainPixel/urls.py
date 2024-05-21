@@ -29,8 +29,10 @@ urlpatterns = [
     path('users/<int:user_id>/skin_info/', views.user_skin_info, name='user_skin_info'),
     path('users/<int:user_id>/change_skin/<str:skin_name>/', views.change_skin, name='change_skin'),
     path('use-hints/', views.use_hints_view, name='use_hints'),
-    path('topics/', views.TopicList.as_view(), name='topic-list'),  # Ссылка на представление TopicList
-    path('questions/', views.QuestionListAPIView.as_view(), name='question-list'),  # Ссылка на представление QuestionListAPIView
+    path('topics/', views.TopicList.as_view(), name='topic-list'),
+    path('topics/<int:topic_id>/', views.TopicInfoAPIView.as_view(), name='topic-info'),
+    path('questions/', views.QuestionListAPIView.as_view(), name='question-list'),
+    path('questions/<int:topic_id>/', views.TopicQuestionListAPIView.as_view(), name='topic-question-list'),
     path('submit_answers/', views.submit_answers, name='submit_answers'),
     path('v/t_auth/', include('rest_framework.urls')),
     path('v/auth/', include('djoser.urls')),

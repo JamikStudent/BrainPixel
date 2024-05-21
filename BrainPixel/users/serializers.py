@@ -12,11 +12,9 @@ class AnswerSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class QuestionSerializer(serializers.ModelSerializer):
-    answers = AnswerSerializer(many=True, read_only=True)
-
     class Meta:
         model = Question
-        fields = '__all__'
+        fields = ['id', 'topic', 'question_text', 'answer_true', 'answer_false_1', 'answer_false_2', 'answer_false_3']
 
 class TopicSerializer(serializers.ModelSerializer):
     questions = QuestionSerializer(many=True, read_only=True)
