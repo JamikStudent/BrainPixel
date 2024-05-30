@@ -1,5 +1,5 @@
 from rest_framework import status, generics
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from .models import *
 from .serializers import *
@@ -8,6 +8,7 @@ from django.contrib.auth import authenticate
 from rest_framework.authtoken.models import Token
 from rest_framework.renderers import JSONRenderer
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 
 # Представление для получения списка пользователей
 class UserAPIView(generics.ListAPIView):
@@ -228,7 +229,7 @@ def bonus_coin(request, user_id):
     })
 
 @api_view(['POST'])
-def submit_answers(request):
+def submit_answers(request, user_id):
     user = request.user
     data = request.data.get('answers')
 
@@ -247,43 +248,40 @@ def submit_answers(request):
         except Question.DoesNotExist:
             return Response({'error': f'Question with id {question_id} does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
         if question.answer_true == answer_text:
             correct_answers += 1
+            user.coin += 50
+            user.save()
 
     score = (correct_answers / total_questions) * 100
 
     if score < 50:
-        message = "Your score is less than 50 per. Do you want to restart the test?"
+        user.has_completed_test = False  # Откат теста
+        user.save()
+        message = "Your score is less than 50%. Do you want to restart the test?"
     else:
-        message = "Congratulations! Your score is 50 per or higher."
+        user.has_completed_test = True  # Успешное завершение теста
+        user.save()
+        message = "Congratulations! Your score is 50% or higher."
 
     return Response({"message": message, "score": score}, status=status.HTTP_200_OK)
 
-
 @api_view(['POST'])
-def evaluate_answers(request):
-    user = request.user  # Получение пользователя из запроса
-    user_answers = request.data.get('answers')  # получение ответов пользователя из запроса
-    if not user_answers:
-        return Response({'error': 'No answers provided'}, status=status.HTTP_400_BAD_REQUEST)
+def start_test(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Получение правильных ответов из базы данных
-    correct_answers = Answer.objects.filter(is_correct=True)
-    
-    # Инициализация переменной для хранения количества баллов пользователя
-    user_score = 0
+    if user.has_completed_test:
+        return Response({'error': 'You have already completed the test'}, status=status.HTTP_403_FORBIDDEN)
 
-    # Сравнение ответов пользователя с правильными ответами
-    for user_answer in user_answers:
-        # Проверка наличия данных ответов
-        if 'question_id' not in user_answer or 'answer_text' not in user_answer:
-            return Response({'error': 'Invalid answer format'}, status=status.HTTP_400_BAD_REQUEST)
+    # Логика для начала теста
 
-        question_id = user_answer['question_id']
-        answer_text = user_answer['answer_text']
+    return Response({'message': 'Test started'}, status=status.HTTP_200_OK)
 
-        # Проверка правильности ответа пользователя
-        if correct_answers.filter(question_id=question_id, text=answer_text).exists():
-            user_score += 1  # Увеличение баллов при правильном ответе
-
-    return Response({'user_score': user_score}, status=status.HTTP_200_OK)

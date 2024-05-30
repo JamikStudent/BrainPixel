@@ -4,15 +4,16 @@ from django.contrib.auth import get_user_model
 
 # Модель пользователя
 class User(models.Model):
-    username = models.CharField(max_length=100)  # Имя пользователя
+    username = models.CharField(max_length=100)
     user_save_topic = models.IntegerField(default=0)
-    coin = models.IntegerField(default=0)  # Количество очков пользователя
-    tips_first_type = models.IntegerField(default=0)  # Количество подсказок первого типа у пользователя
-    tips_second_type = models.IntegerField(default=0)  # Количество подсказок второго типа у пользователя
-    skin = models.CharField(max_length=10, default='blue')  # Тема приложения пользователя
-    skin_b = models.BooleanField(default=True)  # Купил ли пользователь тему
+    coin = models.IntegerField(default=0)
+    tips_first_type = models.IntegerField(default=0)
+    tips_second_type = models.IntegerField(default=0)
+    skin = models.CharField(max_length=10, default='blue')
+    skin_b = models.BooleanField(default=True)
     skin_p = models.BooleanField(default=False)
     skin_g = models.BooleanField(default=False)
+    has_completed_test = models.BooleanField(default=False)
 
     def __str__(self):
         """
