@@ -34,28 +34,34 @@ def create_user(request):
 @api_view(['GET'])
 def get_user(request, user_id):
     try:
-        # Получаем пользователя по его идентификатору из базы данных
         user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
-        # Возвращаем сообщение об ошибке, если пользователь не найден
-        return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Возвращаем информацию о пользователе
-    serializer = UserSerializer(user)
-    return Response(serializer.data)
+    user_data = {
+        'username': user.username,
+        'user_save_topic': user.user_save_topic,
+        'coin': user.coin,
+        'tips_first_type': user.tips_first_type,
+        'tips_second_type': user.tips_second_type,
+        'skin': user.skin,
+        'skin_b': user.skin_b,
+        'skin_p': user.skin_p,
+        'skin_g': user.skin_g,
+        'test_num': user.test_num,
+    }
+
+    return Response(user_data, status=status.HTTP_200_OK)
 
 # Представление для проверки баланса пользователя
 @api_view(['GET'])
 def check_balance(request, user_id):
     try:
-        # Получаем пользователя по его идентификатору из базы данных
         user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
-        # Возвращаем сообщение об ошибке, если пользователь не найден
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Возвращаем текущий баланс пользователя
-    return Response({'balance': user.coin})
+    return Response({'balance': user.coin}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def buy_tips(request, user_id, type_of_tip):
@@ -88,36 +94,30 @@ def buy_tips(request, user_id, type_of_tip):
         'balance': user.coin
     })
 
-@api_view(['POST'])  # Представление должно принимать POST-запросы
+@api_view(['POST'])
 def buy_skin(request, user_id, skin_name):
     try:
-        # Получаем пользователя по его идентификатору из базы данных
         user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
-        # Возвращаем сообщение об ошибке, если пользователь не найден
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Проверяем, доступна ли тема для покупки
+    skin_cost = 150
     if skin_name not in ['pink', 'green']:
         return Response({'error': 'Invalid skin name'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Проверяем, достаточно ли у пользователя баллов для покупки темы
-    if skin_name == 'pink' and user.coin < 100:  # Устанавливаем цену для розовой темы в 200 баллов
-        return Response({'error': 'Insufficient coin'}, status=status.HTTP_400_BAD_REQUEST)
-    elif skin_name == 'green' and user.coin < 100:  # Устанавливаем цену для зеленой темы в 300 баллов
+    if user.coin < skin_cost:
         return Response({'error': 'Insufficient coin'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Вычитаем баллы у пользователя и добавляем информацию о покупке темы
     if skin_name == 'pink':
-        user.coin -= 100
+        user.coin -= skin_cost
         user.skin_p = True
     elif skin_name == 'green':
-        user.coin -= 100
+        user.coin -= skin_cost
         user.skin_g = True
+
     user.skin = skin_name
     user.save()
 
-    # Возвращаем сообщение об успешной покупке темы и информацию о текущем балансе
     return Response({
         'message': f'Skin {skin_name} bought successfully',
         'balance': user.coin
@@ -131,7 +131,6 @@ def user_skin_info(request, user_id):
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
     data = {
-        'skin': user.skin,
         'skin_b': user.skin_b,
         'skin_p': user.skin_p,
         'skin_g': user.skin_g,
@@ -142,20 +141,30 @@ def user_skin_info(request, user_id):
 @api_view(['POST'])
 def change_skin(request, user_id, skin_name):
     try:
-        # Получаем пользователя по его идентификатору из базы данных
         user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
-        # Возвращаем сообщение об ошибке, если пользователь не найден
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Проверяем, есть ли такой скин у пользователя
     if getattr(user, f'skin_{skin_name}', False):
-        # Обновляем скин пользователя
         user.skin = skin_name
         user.save()
         return Response({'message': f'Successfully changed skin to {skin_name}'}, status=status.HTTP_200_OK)
     else:
         return Response({'error': f'Skin {skin_name} is not available for this user'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_user_info(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    data = {
+        'skin': user.skin,
+        'test_num': user.test_num
+    }
+
+    return Response(data, status=status.HTTP_200_OK)
 
 # Представление для использования подсказок
 @api_view(['GET'])
@@ -188,6 +197,77 @@ def use_hints_view(request):
 
     # Возвращаем обновленные данные ответов
     return Response({'updated_answers': updated_answers}, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+def decrement_first_type_hint(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        if user.tips_first_type > 0:
+            user.SubstractClueFirstType()
+            return Response({'status': 'Hint used'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'No hints left'}, status=status.HTTP_400_BAD_REQUEST)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+def decrement_second_type_hint(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        if user.tips_second_type > 0:
+            user.SubstractClueSecondType()
+            return Response({'status': 'Hint used'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'No hints left'}, status=status.HTTP_400_BAD_REQUEST)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+def use_one_correct_hint(request):
+    user_id = request.data.get('user_id')
+    question_id = request.data.get('question_id')
+
+    try:
+        user = User.objects.get(id=user_id)
+        question = Question.objects.get(id=question_id)
+
+        if user.tips_first_type > 0:
+            user.subtract_clue_first_type()
+            return Response({
+                'remaining_clues': user.tips_first_type,
+                'answers': [question.answer_true]
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'No remaining clues of this type'}, status=status.HTTP_400_BAD_REQUEST)
+
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Question.DoesNotExist:
+        return Response({'error': 'Question not found'}, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+def use_fifty_fifty_hint(request):
+    user_id = request.data.get('user_id')
+    question_id = request.data.get('question_id')
+
+    try:
+        user = User.objects.get(id=user_id)
+        question = Question.objects.get(id=question_id)
+
+        if user.tips_second_type > 0:
+            user.subtract_clue_second_type()
+            answers = [question.answer_true, question.answer_false_1]  # Оставляем один правильный и один случайный неверный
+            return Response({
+                'remaining_clues': user.tips_second_type,
+                'answers': answers
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'No remaining clues of this type'}, status=status.HTTP_400_BAD_REQUEST)
+
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Question.DoesNotExist:
+        return Response({'error': 'Question not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class TopicList(generics.ListAPIView):
     queryset = Topic.objects.all()
@@ -229,10 +309,28 @@ def bonus_coin(request, user_id):
     })
 
 @api_view(['POST'])
-def submit_answers(request, user_id):
-    user = request.user
-    data = request.data.get('answers')
+def update_test_num(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
+    test_num = request.data.get('test_num')
+    if test_num is not None:
+        user.test_num = test_num
+        user.save()
+        return Response({'message': 'Test number updated successfully'}, status=status.HTTP_200_OK)
+    else:
+        return Response({'error': 'Invalid test number'}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def submit_answers(request, user_id):
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    data = request.data.get('answers')
     if not data:
         return Response({'error': 'No answers provided'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -248,11 +346,6 @@ def submit_answers(request, user_id):
         except Question.DoesNotExist:
             return Response({'error': f'Question with id {question_id} does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            user = User.objects.get(pk=user_id)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-
         if question.answer_true == answer_text:
             correct_answers += 1
             user.coin += 50
@@ -261,11 +354,11 @@ def submit_answers(request, user_id):
     score = (correct_answers / total_questions) * 100
 
     if score < 50:
-        user.has_completed_test = False  # Откат теста
+        user.test_num -= 1
         user.save()
         message = "Your score is less than 50%. Do you want to restart the test?"
     else:
-        user.has_completed_test = True  # Успешное завершение теста
+        user.test_num += 1
         user.save()
         message = "Congratulations! Your score is 50% or higher."
 
@@ -284,4 +377,3 @@ def start_test(request, user_id):
     # Логика для начала теста
 
     return Response({'message': 'Test started'}, status=status.HTTP_200_OK)
-

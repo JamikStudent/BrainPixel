@@ -13,7 +13,7 @@ class User(models.Model):
     skin_b = models.BooleanField(default=True)
     skin_p = models.BooleanField(default=False)
     skin_g = models.BooleanField(default=False)
-    has_completed_test = models.BooleanField(default=False)
+    test_num = models.IntegerField(default=0)
 
     def __str__(self):
         """
